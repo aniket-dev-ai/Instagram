@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../MiddleWare/Multer");
-
 const {
   register,
   login,
@@ -11,18 +10,20 @@ const {
   getsuggestedUsers,
   followorunfollow,
 } = require("../controller/user.controller");
-const  auth  = require("../MiddleWare/Auth");
+const auth = require("../MiddleWare/Auth");
 
 router.post("/register", register);
 router.post("/login", login);
 router.get("/logout", logout);
 router.get("/:id/profile", auth, getProfile);
-router.post(
-  "/profile/editProfile",
+
+router.put(
+  "/:id/editProfile",
   auth,
   upload.single("profilepicture"),
   editProfile
 );
+
 router.get("/suggestedUsers", auth, getsuggestedUsers);
 router.post("/followorunfollow", auth, followorunfollow);
 

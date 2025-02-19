@@ -50,6 +50,12 @@ exports.login = async (req, res) => {
       expiresIn: "1d",
     });
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+    });
+
     return res
       .status(200)
       .cookie("token", token, {
@@ -92,36 +98,34 @@ exports.getProfile = async (req, res) => {
 
 exports.editProfile = async (req, res) => {
   try {
-    const userid = req.id;
-    const { username, email, bio, gender } = req.body;
-    const profilePicture = req.file ? req.file.path : "";
-    let cloudResponse = "";
+    const userId = req.id;
+    const { username, bio, gender } = req.body;
+    let profilePicture = req.file ? req.file.path : null;
+
     if (profilePicture) {
-      const fileUri = dataUri(profilePicture);
-      await cloudinary.uploader.upload(fileUri.content, (error, result) => {
-        if (error) {
-          console.error("Error uploading image: ", error);
-          return res.status(500).json({ message: "Internal server error" });
-        }
-        cloudResponse = result.url;
-      });
+      const uploadResult = await cloudinary.uploader.upload(profilePicture, { folder: "profile_pics" });
+      profilePicture = uploadResult.secure_url;
     }
-    const user = await UserModel.findById(userid);
+
+    const user = await UserModel.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    user.bio = bio || user.bio;
+
     user.username = username || user.username;
+    user.bio = bio || user.bio;
     user.gender = gender || user.gender;
+    if (profilePicture) user.profilePicture = profilePicture;
 
     await user.save();
 
-    return res.status(200).json({ message: "Profile updated successfully" , user });
+    return res.status(200).json({ message: "Profile updated successfully", user });
   } catch (error) {
-    console.error("Error editing user profile: ", error);
+    console.error("Error editing profile:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 exports.getsuggestedUsers = async (req, res) => {
   try {
